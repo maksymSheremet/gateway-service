@@ -1,0 +1,74 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: gateway-service
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # --- Auth Service ---
+            - id: auth-service
+              uri: http://localhost:8080
+              predicates:
+                - Path=/api/auth/**
+
+            # --- User Service (user-facing endpoints) ---
+            - id: user-service-me
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/me/**
+
+            # --- User Service (admin/internal endpoints) ---
+            - id: user-service-users
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/users/**
+
+          # ===================== Global Filters =====================
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+          # ===================== CORS =====================
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins:
+                  - "http://localhost:3000"
+                  - "http://localhost:5173"
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowed-headers: "*"
+                allow-credentials: true
+                max-age: 3600
+
+# ===================== JWT Configuration =====================
+jwt:
+  secret: ${YOUR_JWT_SECRET_KEY}
+
+# ===================== Actuator =====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: when-authorized
+    gateway:
+      access: unrestricted
+
+# ===================== Logging =====================
+logging:
+  level:
+    root: INFO
+    my.code.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
